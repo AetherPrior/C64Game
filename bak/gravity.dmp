@@ -1,0 +1,174 @@
+00001  0000             KERNAL_CLEAR_SCREEN=$E544 
+00002  0001             
+00003  0001             VICII_REG=$DD00 
+00004  0001             
+00005  0001             TXT_FGCOLOR=$D020 
+00006  0001             TXT_BGCOLOR=$D021 
+00007  0001             
+00008  0001             VICII_CTRL_0=$D011 
+00009  0001             VICII_CTRL_1=$D016 
+00010  0001             
+00011  0001             SPRITE_COLOR_MODE=$D01C 
+00012  0001             SPRITE_MULTI_COLOR_0=$D025 
+00013  0001             SPRITE_MULTI_COLOR_1=$D026 
+00014  0001             SPRITE_REG=$D015 
+00015  0001             
+00016  0001             ; 10 SYS4096
+00017  0001             *=$0801
+00018  0801             
+00019  0801  0B 08 0A              BYTE    $0B, $08, $0A, $00, $9E, $34, $30, $39, $36, $00, $00, $00
+00020  080D             
+00021  080D             *=$1000
+00022  1000             
+00023  1000  4C 08 10              JMP START
+00024  1003             
+00025  1003             GRAVITY_
+00026  1003  01                    BYTE 01
+00027  1004             
+00028  1004             Y_VEL
+00029  1004  01                    BYTE 1
+00030  1005             
+00031  1005             X_VEL
+00032  1005  0A                    BYTE 10
+00033  1006             
+00034  1006             POSX
+00035  1006  00                    BYTE 0
+00036  1007             POSY
+00037  1007  00                    BYTE 0
+00038  1008             
+00039  1008             START
+00040  1008                        
+00041  1008                        ; ENABLE MULTICOLOR BITMAP MODE FOR MULTICOLOR SPRITES
+00042  1008  AD 11 D0              LDA VICII_CTRL_0
+00043  100B  09 20                 ORA #%00100000 ; SET BMM
+00044  100D  29 BF                 AND #%10111111 ; CLEAR ECM
+00045  100F  8D 11 D0              STA VICII_CTRL_0
+00046  1012                        
+00047  1012  AD 16 D0              LDA VICII_CTRL_1
+00048  1015  09 10                 ORA #%00010000 ; SET MCM
+00049  1017  8D 16 D0              STA VICII_CTRL_1
+00050  101A             
+00051  101A                        ;CLRSCR AND SET COLOR TO BE BLACK
+00052  101A             @CLRSCR
+00053  101A  20 44 E5              JSR KERNAL_CLEAR_SCREEN
+00054  101D  A9 00                 LDA #$00
+00055  101F  8D 20 D0              STA TXT_FGCOLOR
+00056  1022  A9 00                 LDA #$00
+00057  1024  8D 21 D0              STA TXT_BGCOLOR
+00058  1027  A9 02                 LDA #$02
+00059  1029  8D 00 DD              STA 56576     ;VIC2 16K MEMORY AT $4000
+00060  102C  A2 90                 LDX #$90
+00061  102E  8E 18 D0              STX $D018     ;SELECT BLOCK $4000-$6000 FOR BITMAP
+00062  1031                        ;BLOCK $6000-$6400 FOR SCREEN
+00063  1031             
+00064  1031  A0 00                 LDY #$00      ; FILL $2000 00S FROM $4000
+00065  1033  98                    TYA
+00066  1034  84 FB                 STY $FB
+00067  1036  A2 40                 LDX #$40
+00068  1038  86 FC                 STX $FC
+00069  103A  A2 20                 LDX #$20
+00070  103C                        
+00071  103C             @FILLB
+00072  103C  91 FB                 STA ($FB),Y
+00073  103E  C8                    INY
+00074  103F  D0 FB                 BNE @FILLB
+00075  1041                        
+00076  1041  E6 FC                 INC $FC
+00077  1043  CA                    DEX
+00078  1044  D0 F6                 BNE @FILLB
+00079  1046             
+00080  1046             @SPRITE
+00081  1046             
+00082  1046                        ; SET SPRITE 0 TO BE IN MULTICOLOR MODE
+00083  1046  A9 01                 LDA #$01
+00084  1048  8D 1C D0              STA SPRITE_COLOR_MODE
+00085  104B             
+00086  104B                        ; SET THE COLORS FOR THE SPRITE
+00087  104B  A9 06                 LDA #$06
+00088  104D  8D 25 D0              STA SPRITE_MULTI_COLOR_0 ; MULTICOLOR REG 0
+00089  1050  A9 07                 LDA #$07
+00090  1052  8D 26 D0              STA SPRITE_MULTI_COLOR_1 ; MULTICOLOR REG 1
+00091  1055  A9 00                 LDA #$00
+00092  1057  8D 27 D0              STA $D027 ; SPRITE COLOR FOR SPRITE 0
+00093  105A                        
+00094  105A             
+00095  105A                        ; LOAD THE SPRITE
+00096  105A             
+00097  105A  A9 C0                 LDA #$C0 ; $C0*$40 = $3000
+00098  105C  8D F8 07              STA $07F8 ;SET POINTER FOR SPRITE
+00099  105F             
+00100  105F  A9 01                 LDA #$01   ; SPRITE #0 DATA
+00101  1061  8D 15 D0              STA SPRITE_REG ; TURN ON SPRITES
+00102  1064             
+00103  1064  A9 80                 LDA #$80
+00104  1066  8D 00 D0              STA $D000 ; X FOR SPRITE 0
+00105  1069  8D 01 D0              STA $D001 ; Y FOR SPRITE 0
+00106  106C                        ; IF X > 255 SET $D010'S FIRST BIT TO 1 AND SET $D00X WITH (X-256)
+00107  106C             
+00108  106C             @LOOP      
+00109  106C  AD 04 10              LDA Y_VEL
+00110  106F  18                    CLC
+00111  1070  6D 07 10              ADC POSY
+00112  1073  8D 07 10              STA POSY
+00113  1076  30 16                 BMI @END
+00114  1078                        
+00115  1078  AD 05 10              LDA X_VEL
+00116  107B  6D 06 10              ADC POSX
+00117  107E  8D 06 10              STA POSX
+00118  1081             
+00119  1081  AD 04 10              LDA Y_VEL
+00120  1084  38                    SEC
+00121  1085  ED 03 10              SBC GRAVITY_
+00122  1088  8D 04 10              STA Y_VEL
+00123  108B                        
+00124  108B  4C 6C 10              JMP @LOOP
+00125  108E             
+00126  108E             @END       
+00127  108E  60                    RTS
+00128  108F             *=$3000
+00129  3000             @          
+00130  3000  00 00 00              BYTE $00,$00,$00,$15,$41,$54,$1F,$55
+00131  3008  F4 1F D7              BYTE $F4,$1F,$D7,$F4,$1F,$D7,$F4,$1A
+00132  3010  AA A4 18              BYTE $AA,$A4,$18,$3C,$24,$18,$3C,$24
+00133  3018  18 96 24              BYTE $18,$96,$24,$1A,$7D,$A4,$1A,$7D
+00134  3020  A4 18 96              BYTE $A4,$18,$96,$24,$18,$3C,$24,$18
+00135  3028  3C 24 1A              BYTE $3C,$24,$1A,$AA,$A4,$1F,$D7,$F4
+00136  3030  1F D7 F4              BYTE $1F,$D7,$F4,$1F,$55,$F4,$15,$41
+00137  3038  54 00 00              BYTE $54,$00,$00,$00,$00,$00,$00
+00138  303F             
+00139  303F             @          
+00140  303F                        INCBIN "MYSPRITE.SPT",1,1
+00141  303F             
+
+******* 6 Label(s) *******
+GRAVITY_ = $1003 
+POSX = $1006 
+POSY = $1007 
+START = $1008 
+X_VEL = $1005 
+Y_VEL = $1004 
+
+******* 1 Unused label(s) *******
+@CLRSCR
+@END
+@FILLB
+@LOOP
+@SPRITE
+START
+
+******* 11 Variable(s) *******
+KERNAL_CLEAR_SCREEN  = $E544
+SPRITE_COLOR_MODE  = $D01C
+SPRITE_MULTI_COLOR_0  = $D025
+SPRITE_MULTI_COLOR_1  = $D026
+SPRITE_REG  = $D015
+tgt_c64  = $0001
+TXT_BGCOLOR  = $D021
+TXT_FGCOLOR  = $D020
+VICII_CTRL_0  = $D011
+VICII_CTRL_1  = $D016
+VICII_REG  = $DD00
+******* -3 Unused variables(s) *******
+tgt_c64
+VICII_REG
+

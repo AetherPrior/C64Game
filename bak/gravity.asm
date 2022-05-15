@@ -1,21 +1,17 @@
 KERNAL_CLEAR_SCREEN=$E544
 
+VICII_REG=$DD00
+
 TXT_FGCOLOR=$D020
 TXT_BGCOLOR=$D021
 
 VICII_CTRL_0=$D011
 VICII_CTRL_1=$D016
-VICII_BANK=$D018
-VICII_REG=$DD00
 
-SPRITE_POS_X=$D000
-SPRITE_POS_Y=$D001
-SPRITE_REG=$D015
 SPRITE_COLOR_MODE=$D01C
 SPRITE_MULTI_COLOR_0=$D025
 SPRITE_MULTI_COLOR_1=$D026
-SPRITE_0_COLOR=$D027
-
+SPRITE_REG=$D015
 
 ; 10 SYS4096
 *=$0801
@@ -35,9 +31,9 @@ Y_VEL
 X_VEL
         BYTE 10
 
-POS_X
+POSX
         BYTE 0
-POS_Y
+POSY
         BYTE 0 
 
 START
@@ -60,17 +56,17 @@ START
         LDA #$00
         STA TXT_BGCOLOR
         LDA #$02
-        STA VICII_REG      ;VIC2 16K MEMORY AT $4000
-        LDX #$80
-        STX VICII_BANK     ;SELECT BLOCK $4000-$6000 for bitmap (bit3 set to 0)
-                           ;BLOCK $6000-$6400 FOR SCREEN (4-7 bits set to 8)
+        STA $DD00      ;VIC2 16K MEMORY AT $4000
+        LDX #$90
+        STX $D018     ;SELECT BLOCK $4000-$6000 for bitmap
+                      ;BLOCK $6000-$6400 FOR SCREEN
 
-        LDY #$00           ; FILL $2000 00s from $4000
+        LDY #$00      ; FILL $2000 00s from $4000
         TYA
         STY $FB
         LDX #$40
-        STX $FC            ;FB FC : 0040 -> $4000
-        LDX #$20                
+        STX $FC
+        LDX #$20
         
 @FILLB
         STA ($FB),Y
@@ -92,33 +88,33 @@ START
         STA SPRITE_MULTI_COLOR_0 ; MULTICOLOR reg 0
         LDA #$07
         STA SPRITE_MULTI_COLOR_1 ; multicolor reg 1
-        LDA #$05
-        STA SPRITE_0_COLOR ; sprite color for sprite 0
+        LDA #$00
+        STA $D027 ; sprite color for sprite 0
         
 
         ; Load the sprite 
 
-        LDA #$C0 ; $C0*$40 + $4000 = $7000
-        STA $63F8 ;set pointer for sprite
+        LDA #$C0 ; $C0*$40 = $3000
+        STA $07F8 ;set pointer for sprite
 
         LDA #$01   ; sprite #0 data
         STA SPRITE_REG ; turn on sprites
 
         LDA #$80
-        STA SPRITE_POS_X ; X for sprite 0
-        STA SPRITE_POS_Y ; Y for sprite 0
+        STA $D000 ; X for sprite 0
+        STA $D001 ; Y for sprite 0
         ; if x > 255 set $D010's first bit to 1 and set $d00x with (x-256)
 
 @LOOP 
         LDA Y_VEL
         CLC
-        ADC POS_Y
-        STA POS_Y
+        ADC POSY
+        STA POSY
         BMI @END
         
         LDA X_VEL
-        ADC POS_X
-        STA POS_X
+        ADC POSX
+        STA POSX
 
         LDA Y_VEL
         SEC
@@ -129,5 +125,5 @@ START
 
 @END    
         RTS
-*=$7000
+*=$3000
         incbin "mysprite.spt",1,1

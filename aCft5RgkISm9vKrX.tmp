@@ -1,3 +1,5 @@
+##{0:0:0:gravity.prg}C:\Users\L12-o-0-554\Documents\c64\physicsengine\gravity.asm
+
 KERNAL_CLEAR_SCREEN=$E544
 
 TXT_FGCOLOR=$D020
@@ -130,4 +132,16 @@ START
 @END    
         RTS
 *=$7000
+IGNOREBLOCKSTART##
+ BYTE $00,$00,$00,$15,$41,$54,$1F,$55
+ BYTE $F4,$1F,$D7,$F4,$1F,$D7,$F4,$1A
+ BYTE $AA,$A4,$18,$3C,$24,$18,$3C,$24
+ BYTE $18,$96,$24,$1A,$7D,$A4,$1A,$7D
+ BYTE $A4,$18,$96,$24,$18,$3C,$24,$18
+ BYTE $3C,$24,$1A,$AA,$A4,$1F,$D7,$F4
+ BYTE $1F,$D7,$F4,$1F,$55,$F4,$15,$41
+ BYTE $54,$00,$00,$00,$00,$00,$00
+
+IGNOREBLOCKEND##
         incbin "mysprite.spt",1,1
+
